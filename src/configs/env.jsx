@@ -1,0 +1,2 @@
+export const API_URL = "http://localhost:3000";
+export const TOKEN  = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJlbWFpbCI6InBrQHlvcG1haWwuY29tIiwic3ViIjoiNjZlZTZlMjhmM2Y3NzcyYTVhNjVjMWFjIiwicm9sZSI6IkFkbWluIiwiaWF0IjoxNzI3MDY4ODAyfQ.WyyzFMUDYS2sbThJM7P14CLaX-jUZuk4COTOijOgqWo"

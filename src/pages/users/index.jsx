@@ -1,24 +1,12 @@
-import { Helmet } from 'react-helmet-async';
 
-import Container from '@mui/material/Container';
-import Typography from '@mui/material/Typography';
-
-import { CONFIG } from 'src/config-global';
-
-// ----------------------------------------------------------------------
-
-const metadata = { title: `Blank - ${CONFIG.site.name}` };
+import { Container } from '@mui/material';
+import { UserListView } from 'src/sections/user/view';
 
 export default function Page() {
     return (
-        <>
-            <Helmet>
-                <title> {metadata.title}</title>
-            </Helmet>
+        <div>
+            <UserListView />
+        </div>
 
-            <Container>
-                <Typography variant="h4">Users Page</Typography>
-            </Container>
-        </>
     );
 }
