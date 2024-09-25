@@ -17,6 +17,9 @@ import { USER_STATUS_OPTIONS } from 'src/_mock'; // Ensure this is your mock dat
 import { toast } from 'src/components/snackbar';
 import { Form, Field, schemaHelper } from 'src/components/hook-form';
 import { MenuItem, Typography } from '@mui/material';
+import { useDispatch } from 'react-redux'; // Import useDispatch
+import { editUser } from 'src/store/action/userActions';
+import { useFetchUserData } from '../components';
 
 // ----------------------------------------------------------------------
 
@@ -32,28 +35,31 @@ export const UserEditSchema = zod.object({
     country: zod.string().min(1, { message: 'Country is required!' }),
     state: zod.string().min(1, { message: 'State is required!' }),
     city: zod.string().min(1, { message: 'City is required!' }),
-    zipCode: zod.string().min(1, { message: 'Zip Code is required!' }),
+    pinCode: zod.string().min(1, { message: 'Pin Code is required!' }), // Use pinCode instead of zipCode
     status: zod.string().min(1, { message: 'Status is required!' }),
-    profile: zod.instanceof(File).optional(), // Optional profile picture
+    profile: zod.instanceof(File).optional().nullable(), // Optional profile picture
 });
 
 // ----------------------------------------------------------------------
 
 export function UserEditForm({ open, onClose, userData }) {
+    const dispatch = useDispatch(); // Initialize dispatch
+    const { fetchData } = useFetchUserData(); // Destructure fetchData from the custom hook
+
     const defaultValues = useMemo(
         () => ({
             firstName: userData?.firstName || '',
             lastName: userData?.lastName || '',
             email: userData?.email || '',
             mobile: userData?.mobile || '',
-            address: userData?.address || '', // Address field
+            // Extracting address from addresses array if exists
+            address: userData?.addresses?.[0]?.address || '',
+            city: userData?.addresses?.[0]?.city || '',
+            state: userData?.addresses?.[0]?.state || '',
+            pinCode: userData?.addresses?.[0]?.pinCode || '',
             country: userData?.country || '',
-            state: userData?.state || '',
-            city: userData?.city || '',
-            zipCode: userData?.zipCode || '',
             status: userData?.status || USER_STATUS_OPTIONS[0]?.value, // Default to the first status option
             profile: null, // Initialize profile picture
-
         }),
         [userData]
     );
@@ -71,26 +77,27 @@ export function UserEditForm({ open, onClose, userData }) {
     } = methods;
 
     const onSubmit = handleSubmit(async (data) => {
-        const promise = new Promise((resolve) => setTimeout(resolve, 1000));
-
-        try {
-            reset();
-            onClose();
-
-            toast.promise(promise, {
-                loading: 'Loading...',
-                success: 'User updated successfully!',
-                error: 'User update failed!',
-            });
-
-            await promise;
-
-            console.info('USER DATA', data);
-            // Handle file upload here if necessary
-        } catch (error) {
-            console.error(error);
+        const updatedData = {
+            ...data,
+            addresses: [
+                {
+                    address: data.address,
+                    city: data.city,
+                    state: data.state,
+                    pinCode: data.pinCode,
+                    _id: userData?.addresses?.[0]?._id || null, // Ensure you pass the address _id for updating
+                },
+            ],
+            profile: data.profile || userData.profile, // Use existing profile if not updated
+        };
+        // Call the editUser action with user ID and updated data
+        const isSuccess = await dispatch(editUser(userData._id, updatedData));
+        if (isSuccess) {
+            reset(); // Reset the form on successful update
+            onClose(); // Close the dialog
+            fetchData()
         }
-    });
+    })
 
     return (
         <Dialog
@@ -116,19 +123,8 @@ export function UserEditForm({ open, onClose, userData }) {
                             justifyContent: 'center',
                         }}
                     >
-                        <Field.UploadAvatar
-                            name="avatarUrl"
-                            maxSize={3145728}
-                        />
-                        <Typography
-                            variant="caption"
-                            sx={{
-                                mt: 3,
-                                mx: 'auto',
-                                textAlign: 'center',
-                                color: 'text.disabled',
-                            }}
-                        >
+                        <Field.UploadAvatar name="profile" maxSize={3145728} />
+                        <Typography variant="caption" sx={{ mt: 3, mx: 'auto', textAlign: 'center', color: 'text.disabled' }}>
                             Allowed *.jpeg, *.jpg, *.png, *.gif
                         </Typography>
                     </Box>
@@ -139,20 +135,14 @@ export function UserEditForm({ open, onClose, userData }) {
                         display="grid"
                         gridTemplateColumns={{ xs: 'repeat(1, 1fr)', sm: 'repeat(2, 1fr)' }}
                     >
-                        <Field.Text name="firstName" label="First Name" />
-                        <Field.Text name="lastName" label="Last Name" />
-                        <Field.Text name="email" label="Email Address" />
-                        <Field.Phone name="mobile" label="Mobile Number" />
-                        <Field.Text name="address" label="Street Address" />
-                        <Field.CountrySelect
-                            fullWidth
-                            name="country"
-                            label="Country"
-                            placeholder="Choose a country"
-                        />
+                        <Field.Text name="firstName" label="FirstName" />
+                        <Field.Text name="lastName" label="LastName" />
+                        <Field.Text name="email" label="Email" />
+                        <Field.Phone name="mobile" label="Mobile" />
+                        <Field.Text name="address" label="Address" />
                         <Field.Text name="state" label="State" />
                         <Field.Text name="city" label="City" />
-                        <Field.Text name="zipCode" label="Zip Code" />
+                        <Field.Text name="pinCode" label="Pin Code" /> {/* Use pinCode instead of zipCode */}
                         <Field.Select name="status" label="Status">
                             {USER_STATUS_OPTIONS.map((status) => (
                                 <MenuItem key={status.value} value={status.value}>
@@ -160,6 +150,12 @@ export function UserEditForm({ open, onClose, userData }) {
                                 </MenuItem>
                             ))}
                         </Field.Select>
+                        <Field.CountrySelect
+                            fullWidth
+                            name="country"
+                            label="Country"
+                            placeholder="Choose a country"
+                        />
                     </Box>
                 </DialogContent>
 

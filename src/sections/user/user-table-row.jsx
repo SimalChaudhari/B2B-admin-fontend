@@ -19,15 +19,23 @@ import { ConfirmDialog } from 'src/components/custom-dialog';
 import { usePopover, CustomPopover } from 'src/components/custom-popover';
 
 import { UserEditForm } from './view/user-edit-form';
+import { UserViewDialog } from './view/user-view';
 
 // ----------------------------------------------------------------------
 
-export function UserTableRow({ row, selected, onEditRow, onSelectRow, onDeleteRow }) {
+export function UserTableRow({ row, selected, onEditRow, onSelectRow, onDeleteRow,onViewRow }) {
+
   const confirm = useBoolean();
 
   const popover = usePopover();
 
   const quickEdit = useBoolean();
+  const quickView = useBoolean();
+
+
+  // const _userByList = useSelector((state) => state.user?.userByID || []);
+  // console.log("🚀 ~ UserTableRow ~ _userByList:", _userByList)
+
 
   return (
     <>
@@ -59,7 +67,7 @@ export function UserTableRow({ row, selected, onEditRow, onSelectRow, onDeleteRo
               <Link color="inherit" onClick={onEditRow} sx={{ cursor: 'pointer' }}>
                 {row.addresses.map((address, index) => (
                   <span key={index}>
-                    {address.street}, {address.city}, {address.state} {address.pinCode}
+                    {address.address}, {address.city}, {address.state} {address.pinCode}
                     {index < row.addresses.length - 1 && ', '} {/* Add a comma between addresses */}
                   </span>
                 ))}
@@ -96,11 +104,14 @@ export function UserTableRow({ row, selected, onEditRow, onSelectRow, onDeleteRo
             <IconButton color={popover.open ? 'inherit' : 'default'} onClick={popover.onOpen}>
               <Iconify icon="eva:more-vertical-fill" />
             </IconButton>
+            
           </Stack>
         </TableCell>
       </TableRow>
 
-      <UserEditForm currentUser={row} open={quickEdit.value} onClose={quickEdit.onFalse} />
+      <UserEditForm open={quickEdit.value} onClose={quickEdit.onFalse} userData={row} />
+      <UserViewDialog open={quickView.value} onClose={quickView.onFalse} userView={row} />
+
 
       <CustomPopover
         open={popover.open}
@@ -121,13 +132,11 @@ export function UserTableRow({ row, selected, onEditRow, onSelectRow, onDeleteRo
           </MenuItem>
 
           <MenuItem
-            onClick={() => {
-              onEditRow();
-              popover.onClose();
-            }}
+            color={quickEdit.value ? 'inherit' : 'default'}
+            onClick={quickView.onTrue}
           >
             <Iconify icon="solar:pen-bold" />
-            Edit
+            View
           </MenuItem>
         </MenuList>
       </CustomPopover>

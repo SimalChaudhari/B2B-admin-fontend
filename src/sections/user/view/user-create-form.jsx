@@ -2,7 +2,7 @@ import { z as zod } from 'zod';
 import { useMemo } from 'react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
-import { isValidPhoneNumber } from 'react-phone-number-input/input';
+import { isValidPhoneNumber, parsePhoneNumber } from 'react-phone-number-input/input';
 
 import Box from '@mui/material/Box';
 import Alert from '@mui/material/Alert';
@@ -14,10 +14,10 @@ import DialogActions from '@mui/material/DialogActions';
 import DialogContent from '@mui/material/DialogContent';
 import { MenuItem, Typography } from '@mui/material';
 import { USER_STATUS_OPTIONS } from 'src/_mock'; // Ensure this is your mock data for user statuses
-import { toast } from 'src/components/snackbar'; // Your toast notification component
 import { Form, Field, schemaHelper } from 'src/components/hook-form'; // Custom components for form handling
 import { createUser } from 'src/store/action/userActions'; // Import the action to create a user
 import { useDispatch } from 'react-redux';
+import { useFetchUserData } from '../components';
 
 // ----------------------------------------------------------------------
 
@@ -40,10 +40,10 @@ export const UserCreateSchema = zod.object({
 });
 
 // ----------------------------------------------------------------------
-
 // User Create Form Component
 export function UserCreateForm({ open, onClose }) {
     const dispatch = useDispatch();
+    const { fetchData } = useFetchUserData(); // Destructure fetchData from the custom hook
 
     // Default form values
     const defaultValues = useMemo(() => ({
@@ -52,7 +52,7 @@ export function UserCreateForm({ open, onClose }) {
         email: '',
         mobile: '',
         address: '',
-        country: '',
+        country: 'India',
         state: '',
         city: '',
         zipCode: '',
@@ -64,7 +64,7 @@ export function UserCreateForm({ open, onClose }) {
         resolver: zodResolver(UserCreateSchema),
         defaultValues,
     });
-
+    //----------------------------------------------------------------------------------------------------
     const {
         reset,
         handleSubmit,
@@ -73,44 +73,20 @@ export function UserCreateForm({ open, onClose }) {
 
     // Handle form submission
     const onSubmit = async (data) => {
-        console.log('Submitting Data:', data); // Log data being submitted
-
-        // Format the address to match your backend's expected structure
         const formattedData = {
-            firstName: data.firstName,
-            lastName: data.lastName,
-            email: data.email,
-            mobile: data.mobile,
-            country: data.country,
-            status: data.status,
-            profile: data.profile, // Make sure to handle the file upload in your action
-            addresses: [
-                {
-                    address: data.address,
-                    city: data.city,
-                    state: data.state,
-                    pinCode: data.zipCode, // Make sure to match the expected field name
-                },
-            ],
+            ...data,
+            addresses: [{
+                address: data.address,
+                city: data.city,
+                state: data.state,
+                pinCode: data.zipCode,
+            }],
         };
-
-        try {
-            const response = await dispatch(createUser(formattedData));
-            console.log('Dispatch Response:', response); // Log the entire response
-
-            // Check if user object is present in response
-            if (response && response.user) {
-                const { user } = response; // Destructure the user object from the response
-                toast.success(`User ${user.firstName} ${user.lastName} created successfully!`);
-
-                reset(); // Reset the form fields after submission
-                onClose(); // Close the dialog after submission
-            } else {
-                toast.error('User creation failed!');
-            }
-        } catch (error) {
-            console.error('Error creating user:', error);
-            toast.error('User creation failed!');
+        const response = await dispatch(createUser(formattedData));
+        if (response) {
+            reset();
+            onClose();
+            fetchData()
         }
     };
 
@@ -124,27 +100,26 @@ export function UserCreateForm({ open, onClose }) {
                         Please fill in the details below to create a new user.
                     </Alert>
                     <Box
-                    sx={{
-                        mb: 5,
-                        display: 'flex',
-                        flexDirection: 'column',
-                        alignItems: 'center',
-                        justifyContent: 'center',
-                    }}
-                >
-                    <Field.UploadAvatar name="profile" maxSize={3145728} />
-                    <Typography variant="caption" sx={{ mt: 3, mx: 'auto', textAlign: 'center', color: 'text.disabled' }}>
-                        Allowed *.jpeg, *.jpg, *.png, *.gif
-                    </Typography>
-                </Box>
+                        sx={{
+                            mb: 5,
+                            display: 'flex',
+                            flexDirection: 'column',
+                            alignItems: 'center',
+                            justifyContent: 'center',
+                        }}
+                    >
+                        <Field.UploadAvatar name="profile" maxSize={3145728} />
+                        <Typography variant="caption" sx={{ mt: 3, mx: 'auto', textAlign: 'center', color: 'text.disabled' }}>
+                            Allowed *.jpeg, *.jpg, *.png, *.gif
+                        </Typography>
+                    </Box>
 
                     <Box display="grid" gridTemplateColumns={{ xs: 'repeat(1, 1fr)', sm: 'repeat(2, 1fr)' }} gap={3}>
-                        <Field.Text name="firstName" label="First Name" />
-                        <Field.Text name="lastName" label="Last Name" />
-                        <Field.Text name="email" label="Email Address" />
-                        <Field.Phone name="mobile" label="Mobile Number" />
-                        <Field.Text name="address" label="Street Address" />
-                        <Field.CountrySelect fullWidth name="country" label="Country" placeholder="Choose a country" />
+                        <Field.Text name="firstName" label="FirstName" />
+                        <Field.Text name="lastName" label="LastName" />
+                        <Field.Text name="email" label="Email" />
+                        <Field.Phone name="mobile" label="Mobile" />
+                        <Field.Text name="address" label="Address" />
                         <Field.Text name="state" label="State" />
                         <Field.Text name="city" label="City" />
                         <Field.Text name="zipCode" label="Zip Code" />
@@ -155,8 +130,8 @@ export function UserCreateForm({ open, onClose }) {
                                 </MenuItem>
                             ))}
                         </Field.Select>
+                        <Field.CountrySelect fullWidth name="country" label="Country" placeholder="Choose a country" />
                     </Box>
-                 
                 </DialogContent>
 
                 <DialogActions>
