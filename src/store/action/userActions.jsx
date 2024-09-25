@@ -1,3 +1,4 @@
+import { toast } from "sonner";
 import axiosInstance from "src/configs/axiosInstance";
 
 export const userList = () => async (dispatch) => {
@@ -9,17 +10,58 @@ export const userList = () => async (dispatch) => {
         });
         return true;
     } catch (error) {
-        console.error(error); // Log the error for debugging
-        return false;
+        // Check if error response exists and handle error message
+        const errorMessage = error?.response?.data?.message || 'An unexpected error occurred. Please try again.';
+        toast.error(errorMessage);
     }
+    return false; // Return false for any errors
 };
 
 export const createUser = (userData) => async (dispatch) => {
     try {
-        await axiosInstance.post('/auth/register', userData);
+        const response = await axiosInstance.post('/auth/register', userData);
+        if (response && response.status >= 200 && response.status < 300) {
+            toast.success(response.data.message || 'User registered successfully!');
+            return true;
+        }
         return true;
     } catch (error) {
-        console.error(error); // Log the error for debugging
-        return false;
+        // Check if error response exists and handle error message
+        const errorMessage = error?.response?.data?.message || 'An unexpected error occurred. Please try again.';
+        toast.error(errorMessage);
     }
+    return false; // Return false for any errors
+};
+
+export const editUser = (userId, userData) => async (dispatch) => {
+    try {
+        const response = await axiosInstance.put(`/users/update/${userId}`, userData);
+
+        // Check if the response is successful
+        if (response && response.status >= 200 && response.status < 300) {
+            toast.success(response.data.message || 'User updated successfully!');
+            return true; // Indicate successful update
+        }
+    } catch (error) {
+        // Handle errors appropriately
+        const errorMessage = error?.response?.data?.message || 'An unexpected error occurred. Please try again.';
+        toast.error(errorMessage);
+    }
+    return false; // Return false for any errors or unsuccessful attempts
+};
+
+export const deleteUser = (userId) => async (dispatch) => {
+    try {
+        const response = await axiosInstance.delete(`/users/delete/${userId}`);
+        // Check if the response is successful
+        if (response && response.status >= 200 && response.status < 300) {
+            toast.success(response.data.message || 'User deleted successfully!');
+            return true; // Indicate successful deletion
+        }
+    } catch (error) {
+        // Handle errors appropriately
+        const errorMessage = error?.response?.data?.message || 'An unexpected error occurred. Please try again.';
+        toast.error(errorMessage);
+    }
+    return false; // Return false for any errors or unsuccessful attempts
 };
